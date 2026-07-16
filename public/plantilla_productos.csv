@@ -1,0 +1,4 @@
+nombre,principio_activo,concentracion,forma,codigo_barras,precio_unidad,precio_blister,precio_caja,und_x_caja,und_x_blister,stock_minimo
+Amoxicilina 500,Amoxicilina,500 mg,Capsula,7501002000001,0.80,6.00,20.00,100,10,20
+Losartan 50,Losartan,50 mg,Tableta,7501002000002,0.60,5.50,18.00,100,10,20
+Enalapril 10,Enalapril,10 mg,Tableta,7501002000003,0.40,3.50,12.00,100,10,20

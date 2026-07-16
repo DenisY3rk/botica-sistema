@@ -1,0 +1,180 @@
+// ============================================================
+//  ESQUEMA DE BASE DE DATOS - Sistema para Boticas (Peru)
+// ------------------------------------------------------------
+//  Provider: SQLite (desarrollo).  Para produccion en Vercel
+//  cambiar provider a "postgresql" (ver .env.example).
+//  Nota: no usamos enum() porque SQLite no lo soporta en Prisma;
+//  usamos String con valores controlados desde la app.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// -------- Catalogos base --------
+
+model Categoria {
+  id        Int        @id @default(autoincrement())
+  nombre    String     @unique
+  productos Producto[]
+}
+
+model Laboratorio {
+  id        Int        @id @default(autoincrement())
+  nombre    String     @unique
+  productos Producto[]
+}
+
+model Proveedor {
+  id         Int       @id @default(autoincrement())
+  nombre     String
+  ruc        String?   @unique
+  telefono   String?
+  contacto   String?
+  direccion  String?
+  activo     Boolean   @default(true)
+  compras    Compra[]
+  lotes      Lote[]
+  createdAt  DateTime  @default(now())
+}
+
+// -------- Producto (medicamento / articulo) --------
+
+model Producto {
+  id               Int      @id @default(autoincrement())
+  nombre           String
+  principioActivo  String
+  concentracion    String?
+  formaFarma       String?
+  codigoBarras     String?  @unique
+  requiereReceta   Boolean  @default(false)
+
+  categoriaId      Int?
+  categoria        Categoria?   @relation(fields: [categoriaId], references: [id])
+  laboratorioId    Int?
+  laboratorio      Laboratorio? @relation(fields: [laboratorioId], references: [id])
+
+  precioCaja       Float    @default(0)
+  precioBlister    Float    @default(0)
+  precioUnidad     Float    @default(0)
+
+  unidadesPorCaja     Int   @default(1)
+  unidadesPorBlister  Int   @default(1)
+
+  stockMinimo      Int      @default(10)
+  activo           Boolean  @default(true)
+
+  lotes            Lote[]
+  ventaItems       VentaItem[]
+  compraItems      CompraItem[]
+  kardex           MovimientoKardex[]
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([principioActivo])
+  @@index([nombre])
+}
+
+// -------- Lote: stock fisico con vencimiento --------
+
+model Lote {
+  id                Int        @id @default(autoincrement())
+  productoId        Int
+  producto          Producto   @relation(fields: [productoId], references: [id])
+  codigoLote        String
+  fechaVencimiento  DateTime
+  cantidad          Int        @default(0)
+  costoUnitario     Float      @default(0)
+  fechaIngreso      DateTime   @default(now())
+  proveedorId       Int?
+  proveedor         Proveedor? @relation(fields: [proveedorId], references: [id])
+
+  ventaItems        VentaItem[]
+  compraItems       CompraItem[]
+  kardex            MovimientoKardex[]
+
+  @@index([fechaVencimiento])
+  @@index([productoId])
+}
+
+// -------- Ventas --------
+
+model Venta {
+  id          Int         @id @default(autoincrement())
+  fecha       DateTime    @default(now())
+  total       Float       @default(0)
+  metodoPago  String      @default("EFECTIVO")
+  cliente     String?
+  usuario     String      @default("cajero")
+  items       VentaItem[]
+
+  @@index([fecha])
+}
+
+model VentaItem {
+  id           Int      @id @default(autoincrement())
+  ventaId      Int
+  venta        Venta    @relation(fields: [ventaId], references: [id], onDelete: Cascade)
+  productoId   Int
+  producto     Producto @relation(fields: [productoId], references: [id])
+  loteId       Int?
+  lote         Lote?    @relation(fields: [loteId], references: [id])
+  tipoUnidad   String   @default("UNIDAD")
+  cantidad     Int
+  cantidadBase Int
+  precioUnit   Float
+  costoUnit    Float    @default(0)
+  subtotal     Float
+}
+
+// -------- Compras --------
+
+model Compra {
+  id             Int          @id @default(autoincrement())
+  fecha          DateTime     @default(now())
+  proveedorId    Int
+  proveedor      Proveedor    @relation(fields: [proveedorId], references: [id])
+  numeroDoc      String?
+  total          Float        @default(0)
+  items          CompraItem[]
+
+  @@index([fecha])
+}
+
+model CompraItem {
+  id           Int      @id @default(autoincrement())
+  compraId     Int
+  compra       Compra   @relation(fields: [compraId], references: [id], onDelete: Cascade)
+  productoId   Int
+  producto     Producto @relation(fields: [productoId], references: [id])
+  loteId       Int?
+  lote         Lote?    @relation(fields: [loteId], references: [id])
+  cantidad     Int
+  costoUnit    Float
+  subtotal     Float
+}
+
+// -------- Kardex: trazabilidad de movimientos --------
+
+model MovimientoKardex {
+  id           Int      @id @default(autoincrement())
+  fecha        DateTime @default(now())
+  productoId   Int
+  producto     Producto @relation(fields: [productoId], references: [id])
+  loteId       Int?
+  lote         Lote?    @relation(fields: [loteId], references: [id])
+  tipo         String
+  cantidad     Int
+  saldo        Int
+  costoUnit    Float    @default(0)
+  referencia   String?
+
+  @@index([productoId])
+  @@index([fecha])
+}
