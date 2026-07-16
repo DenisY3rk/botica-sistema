@@ -26,7 +26,7 @@ export async function guardarProducto(formData: FormData) {
 
 export async function listarProductos(q?: string) {
   return prisma.producto.findMany({
-    where: q ? { OR: [{ nombre: { contains: q } }, { principioActivo: { contains: q } }, { codigoBarras: { contains: q } }] } : {},
+    where: q ? { OR: [{ nombre: { contains: q, mode: 'insensitive' } }, { principioActivo: { contains: q, mode: 'insensitive' } }, { codigoBarras: { contains: q } }] } : {},
     include: { laboratorio: true, categoria: true, lotes: true },
     orderBy: { nombre: 'asc' }, take: 200,
   });

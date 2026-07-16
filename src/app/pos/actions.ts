@@ -12,8 +12,8 @@ export async function buscarProductos(q: string) {
     where: {
       activo: true,
       OR: [
-        { nombre: { contains: term } },
-        { principioActivo: { contains: term } },
+        { nombre: { contains: term, mode: 'insensitive' } },
+        { principioActivo: { contains: term, mode: 'insensitive' } },
         { codigoBarras: { equals: term } },
       ],
     },
